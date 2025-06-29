@@ -12,7 +12,7 @@ snapshot to use.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@os_info//:os_info.bzl", "cpu_value", "is_darwin", "is_linux", "is_windows")
-load("@rules_haskell//haskell:cabal.bzl", _stack_snapshot = "stack_snapshot")
+load("@rules_haskell//haskell:cabal.bzl", "chop_version", _stack_snapshot = "stack_snapshot")
 
 _snapshot_tag = tag_class(
     doc = "The stack snapshot to use.",
@@ -156,43 +156,45 @@ def _add_packages(conf, module, root_or_rules_haskell):
     packages_in_module = sets.make()
     for package_tag in module.tags.package:
         package_name = package_tag.name
+        package_name_unversioned = chop_version(package_name)
 
         # Check that a package is configure at most one time per module
-        if sets.contains(packages_in_module, package_name):
+        if sets.contains(packages_in_module, package_name_unversioned):
             fail("""Module "{module_name}~{module_version}" configured package "{package_name}" multiple times.""".format(
                 module_version = module.version,
                 module_name = module.name,
                 package_name = package_name,
             ))
-        sets.insert(packages_in_module, package_name)
+        sets.insert(packages_in_module, package_name_unversioned)
 
         # If the package is already configured, we can only make it visible.
-        if sets.contains(conf.configured_packages, package_name):
-            if not package_tag.hidden and package_name not in conf.vendored_packages:
+        if sets.contains(conf.configured_packages, package_name_unversioned):
+            if not package_tag.hidden and package_name_unversioned not in conf.vendored_packages:
                 sets.insert(conf.packages, package_name)
             continue
-        sets.insert(conf.configured_packages, package_name)
+        sets.insert(conf.configured_packages, package_name_unversioned)
 
         # We are the first one to configure the package:
         if not package_tag.hidden and not package_tag.vendored:
             sets.insert(conf.packages, package_name)
         if package_tag.components != ["DETECT_DEFAULT"]:
             # Some packages have default components set
-            conf.components[package_name] = package_tag.components
+            conf.components[package_name_unversioned] = package_tag.components
         if package_tag.components_dependencies:
-            conf.components_dependencies[package_name] = json.encode(package_tag.components_dependencies)
+            conf.components_dependencies[package_name_unversioned] = \
+                json.encode(package_tag.components_dependencies)
         if package_tag.extra_deps:
-            conf.extra_deps[package_name] = package_tag.extra_deps
+            conf.extra_deps[package_name_unversioned] = package_tag.extra_deps
         if root_or_rules_haskell:
             # Only the root module or rules_haskell can modify the
             # following configuration settings. To make the configuration
             # easier to understand.
             if package_tag.setup_deps:
-                conf.setup_deps[package_name] = package_tag.setup_deps
+                conf.setup_deps[package_name_unversioned] = package_tag.setup_deps
             if package_tag.flags:
-                conf.flags[package_name] = package_tag.flags
+                conf.flags[package_name_unversioned] = package_tag.flags
             if package_tag.vendored:
-                conf.vendored_packages[package_name] = package_tag.vendored
+                conf.vendored_packages[package_name_unversioned] = package_tag.vendored
         else:
             _assert_no_root_package_attrs(module, package_tag)
 
