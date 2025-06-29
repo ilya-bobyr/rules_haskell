@@ -284,7 +284,7 @@ def _stack_snapshot_impl(mctx):
             if module.tags.haddock:
                 _assert_unique_tag(module.tags.haddock, "haddock", module)
                 haddock_tag = module.tags.haddock[0]
-                kwargs["haddock"] = haddock_tag.label
+                kwargs["haddock"] = haddock_tag.value
         else:
             _assert_no_root_tags(module)
 
