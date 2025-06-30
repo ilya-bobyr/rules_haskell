@@ -118,6 +118,16 @@ _package_tag = tag_class(
             ```
             """,
         ),
+        "components_args": attr.string_dict(
+            doc = """Defines additional parameters for a component, to be used when determining how
+            this component needs to be built.  Keys are component names, such as `lib`, `exe`,
+            `lib:<sublib-name>`, or `exe:<exe-name>`.  Values must be labels of the
+            `haskell_cabal_args` rule that defines how this component needs to be built.
+
+            As it is a very common use case, a rule that defines an empty library is available at
+            `@rules_haskell//tools/cabal_args:empty_library`.
+            """,
+        ),
         "vendored": attr.label(
             doc = """Add or override the package with a custom unpacked source distribution.
             The package must contain a Cabal file named <package-name>.cabal in the package root.
@@ -183,6 +193,10 @@ def _add_packages(conf, module, root_or_rules_haskell):
         if package_tag.components_dependencies:
             conf.components_dependencies[package_name_unversioned] = \
                 json.encode(package_tag.components_dependencies)
+        if package_tag.components_args:
+            for (component, args) in package_tag.components_args.items():
+                key = "%s:%s" % (package_name_unversioned, component)
+                conf.components_args[key] = args
         if package_tag.extra_deps:
             conf.extra_deps[package_name_unversioned] = package_tag.extra_deps
         if root_or_rules_haskell:
@@ -296,6 +310,7 @@ def _stack_snapshot_impl(mctx):
         extra_deps = {},
         components = {},
         components_dependencies = {},
+        components_args = {},
         vendored_packages = {},
     )
 
@@ -319,6 +334,7 @@ def _stack_snapshot_impl(mctx):
     kwargs["flags"] = packages_conf.flags
     kwargs["components"] = packages_conf.components
     kwargs["components_dependencies"] = packages_conf.components_dependencies
+    kwargs["components_args"] = packages_conf.components_args
     kwargs["extra_deps"] = packages_conf.extra_deps
     kwargs["vendored_packages"] = packages_conf.vendored_packages
     kwargs["name"] = "stackage"
