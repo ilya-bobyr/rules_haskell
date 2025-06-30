@@ -93,7 +93,6 @@ load("@rules_bazel_integration_test//bazel_integration_test:deps.bzl", "bazel_in
 
 bazel_integration_test_rules_dependencies()
 
-
 load(
     "@rules_haskell//:constants.bzl",
     _default_ghc_version = "test_ghc_version",
@@ -138,7 +137,7 @@ load(
 haskell_register_ghc_bindists(
     cabalopts = test_cabalopts,
     dist = {
-      "linux_amd64": "deb10",
+        "linux_amd64": "deb10",
     },
     ghcopts = test_ghcopts,
     version = GHC_VERSION,
